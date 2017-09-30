@@ -2,6 +2,11 @@
 #include "brainfuck.h"
 #define DATA_TYPE size_t
 #include "stack.h"
+#define DATA_TYPE size_t
+#include "cvector.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 
 #define DEFAULT_BLOCK_STACK_SIZE 100
 void interpret(char const* instructions,size_t space) {
@@ -84,44 +89,141 @@ void add_to(char const* const prog,char const* const str,size_t* const progress)
 	memcpy(prog+*progress,str,strl=(strlen(str)));
 	(*progress)+=strl;
 }
-void add_op(char const* inst,int op,unsigned int num,size_t *progress) {
+
+char inline digit_to_char(unsigned int digit) {
+	return '0'+digit;
+}
+void add_num(char const* prog,unsigned int num,size_t *progress) {
+#define buff_size 25
+	char buffer[buff_size];
+	char* loc=buffer+buff_size;
+	*(--loc)='\0';
+	do
+	{
+		*(--loc)=digit_to_char(num%10);
+	} while((num/=10)>0);
+	add_to(prog,loc,progress);
+#undef buff_size
+}
+
+void add_op(char const* prog,size_t op,size_t *num,size_t *progress) {
 	switch(op)
 	{
-		case PLUS:;
+		case NONE: return;
+		case PLUS: add_to(prog,"buffer[pos_b]+=",progress); break;
+		case MINUS: add_to(prog,"buffer[pos_b]-=",progress); break;
+		case SHIFTF: add_to(prog,"pos_b+=",progress); break;
+		case SHIFTB: add_to(prog,"pos_b-=",progress); break;
 	}
+	add_num(prog,*num,progress);
+	add_to(prog,";\n",progress);
+	*num=0;
 }
-int compile_to_c(char const* inst,size_t space) {
+
+int compile_to_c(char const* inst) {
 	char* prog=malloc(MAX_SIZE);
-	size_t prog_index=0;
-	size_t top=-1;
-	size_t start_op;
-	size_t current_val;
-	int op=0;
-	add_to(inst,"int main() {",12,&prog_index);
-	while(inst[++top]!='\0')
+	size_t str_end=0;
+	size_t back=0;
+	add_to(prog,"#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\nint main(){\n#define buffer_size 10000\nchar buffer[buffer_size];\nsize_t pos_b=0;\nmemset(buffer,0,buffer_size);\n",&str_end);
+	int last_op=NONE;
+	size_t op_count=0;
+	stack_size_t loops=create_stack_size_t(30);
+	vector_size_t locs=create_vector_size_t(30);
+	while(inst[back]!='\0')
 	{
-		switch(inst[top])
+		switch(inst[back])
 		{
-			case '+': {
-				switch(op) {
-					case NONE: start_op=top; op=PLUS;
+			case '+':
+			{
+				if(last_op!=PLUS)
+				{
+					add_op(prog,last_op,&op_count,&str_end);
+					last_op=PLUS;
 				}
+				++op_count;
+				break;
+			}
+			case '-': {
+				if(last_op!=MINUS)
+				{
+					add_op(prog,last_op,&op_count,&str_end);
+					last_op=MINUS;
+				}
+				++op_count;
+				break;
+			}
+			case '>': {
+				if(last_op!=SHIFTF)
+				{
+					add_op(prog,last_op,&op_count,&str_end);
+					last_op=SHIFTF;
+				}
+				++op_count;
+				break;
+			}
+			case '<': {
+				if(last_op!=SHIFTB)
+				{
+					add_op(prog,last_op,&op_count,&str_end);
+					last_op=SHIFTB;
+				}
+				++op_count;
+				break;
 			}
 			default: {
-				free(prog);
-				return 1;
+				add_op(prog,last_op,&op_count,&str_end);
+				last_op=NONE;
+				switch(inst[back])
+				{
+					case '[': {
+						add_to(prog,"while(buffer[pos_b]){\n",&str_end);
+						break;
+					}
+					case ']': {
+						add_to(prog,"}\n",&str_end);
+						break;
+					}
+					case '.': {
+						add_to(prog,"putchar(buffer[pos_b]);\n",&str_end);
+						break;
+					}
+					case ',': {
+						add_to(prog,"buffer[pos_b]=getchar();\n",&str_end);
+						break;
+					}
+					default: free(prog); return 1;
+				}
 			}
 		}
+		//printf("%d\n",top);
+		++back;
 	}
+	add_to(prog,"return 0;}",&str_end);
+	prog[str_end]='\0';
+	FILE* file=fopen("mybrainfuck.c","w");
+	if(!file)
+	{
+		free(prog);
+		return 2;
+	}
+	if(fputs(prog,file)==EOF)
+	{
+		fclose(file);
+		free(prog);
+		return 3;
+	}
+	fclose(file);
+	free(prog);
+	return 0;
 }
 
 int compile_to_x86_unoptimized(char const* inst) {
 	char* prog=malloc(MAX_SIZE);
-	size_t top=0;
-	add_to(prog,"global _main\n",13,&top);
-	while(inst[top++]!='\0')
+	size_t back=0;
+	add_to(prog,"global _main\n",13,&back);
+	while(inst[back++]!='\0')
 	{
-	#define c (inst[top])
+	#define c (inst[back])
 		switch(c)
 		{
 			//case '+': add_to(prog,"")
@@ -133,11 +235,11 @@ int compile_to_x86_unoptimized(char const* inst) {
 int compile_to_c_unoptimized(char const* inst) {
 	char* prog=malloc(MAX_SIZE);
 	size_t str_end=0;
-	size_t top=0;
+	size_t back=0;
 	add_to(prog,"#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\nint main(){\nsize_t buffer_size=1000;\nchar* buffer=(char*)malloc(buffer_size);\nsize_t pos_b=0;\nmemset(buffer,0,buffer_size);\n",&str_end);
-	while(inst[top]!='\0')
+	while(inst[back]!='\0')
 	{
-		switch(inst[top])
+		switch(inst[back])
 		{
 			case '+': add_to(prog,"++buffer[pos_b];\n",&str_end); break;
 			case '-': add_to(prog,"--buffer[pos_b];\n",&str_end); break;
@@ -149,7 +251,7 @@ int compile_to_c_unoptimized(char const* inst) {
 			case ',': add_to(prog,"buffer[pos_b]=getchar();\n",&str_end); break;
 			default: free(prog); return 1;
 		}
-		++top;
+		++back;
 	}
 	add_to(prog,"return 0;}",&str_end);
 	prog[str_end]='\0';
