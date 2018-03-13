@@ -121,7 +121,7 @@ void add_op(char const* prog,size_t op,size_t *num,size_t *progress) {
 	*num=0;
 }
 
-int compile_to_c(char const* inst) {
+int compile_to_c(char const* inst,char const* output) {
 	char* prog=malloc(MAX_SIZE);
 	size_t str_end=0;
 	size_t back=0;
@@ -198,7 +198,7 @@ int compile_to_c(char const* inst) {
 	}
 	add_to(prog,"return 0;}",&str_end);
 	prog[str_end]='\0';
-	FILE* file=fopen("mybrainfuck.c","w");
+	FILE* file=fopen(output,"w");
 	if(!file)
 	{
 		free(prog);
@@ -215,7 +215,7 @@ int compile_to_c(char const* inst) {
 	return 0;
 }
 
-int compile_to_x86_unoptimized(char const* inst) {
+int compile_to_x86_unoptimized(char const* inst,char const* output) {
 	char* prog=malloc(MAX_SIZE);
 	size_t back=0;
 	add_to(prog,"global _main\n",13,&back);
@@ -230,7 +230,7 @@ int compile_to_x86_unoptimized(char const* inst) {
 	return 0;
 }
 
-int compile_to_c_unoptimized(char const* inst) {
+int compile_to_c_unoptimized(char const* inst,char const* output) {
 	char* prog=malloc(MAX_SIZE);
 	size_t str_end=0;
 	size_t back=0;
