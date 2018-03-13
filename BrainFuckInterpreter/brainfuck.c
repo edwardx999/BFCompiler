@@ -2,7 +2,8 @@
 #include "brainfuck.h"
 #define DATA_TYPE size_t
 #include "stack.h"
-#define DATA_TYPE size_t
+#undef DATA_TYPE
+#define DATA_TYPE int
 #include "cvector.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,8 +111,8 @@ void add_op(char const* prog,size_t op,size_t *num,size_t *progress) {
 	switch(op)
 	{
 		case NONE: return;
-		case PLUS: add_to(prog,"buffer[pos_b]+=",progress); break;
-		case MINUS: add_to(prog,"buffer[pos_b]-=",progress); break;
+		case PLUS: add_to(prog,"*pos_b+=",progress); break;
+		case MINUS: add_to(prog,"*pos_b-=",progress); break;
 		case SHIFTF: add_to(prog,"pos_b+=",progress); break;
 		case SHIFTB: add_to(prog,"pos_b-=",progress); break;
 	}
@@ -124,11 +125,9 @@ int compile_to_c(char const* inst) {
 	char* prog=malloc(MAX_SIZE);
 	size_t str_end=0;
 	size_t back=0;
-	add_to(prog,"#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\nint main(){\n#define buffer_size 10000\nchar buffer[buffer_size];\nsize_t pos_b=0;\nmemset(buffer,0,buffer_size);\n",&str_end);
+	add_to(prog,"#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\nint main(){\n#define buffer_size 10000\nchar buffer[buffer_size];\nchar* pos_b=buffer;\nmemset(buffer,0,buffer_size);\n",&str_end);
 	int last_op=NONE;
 	size_t op_count=0;
-	stack_size_t loops=create_stack_size_t(30);
-	vector_size_t locs=create_vector_size_t(30);
 	while(inst[back]!='\0')
 	{
 		switch(inst[back])
@@ -176,7 +175,7 @@ int compile_to_c(char const* inst) {
 				switch(inst[back])
 				{
 					case '[': {
-						add_to(prog,"while(buffer[pos_b]){\n",&str_end);
+						add_to(prog,"while(*pos_b){\n",&str_end);
 						break;
 					}
 					case ']': {
@@ -184,18 +183,17 @@ int compile_to_c(char const* inst) {
 						break;
 					}
 					case '.': {
-						add_to(prog,"putchar(buffer[pos_b]);\n",&str_end);
+						add_to(prog,"putchar(*pos_b);\n",&str_end);
 						break;
 					}
 					case ',': {
-						add_to(prog,"buffer[pos_b]=getchar();\n",&str_end);
+						add_to(prog,"*pos_b=getchar();\n",&str_end);
 						break;
 					}
 					default: free(prog); return 1;
 				}
 			}
 		}
-		//printf("%d\n",top);
 		++back;
 	}
 	add_to(prog,"return 0;}",&str_end);
