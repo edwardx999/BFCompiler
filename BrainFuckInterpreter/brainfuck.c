@@ -1,3 +1,19 @@
+/*
+Copyright(C) 2018 Edward Xie
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
 #include "stdafx.h"
 #include "brainfuck.h"
 #define DATA_TYPE size_t
@@ -80,11 +96,9 @@ void interpret(char const* instructions,size_t space) {
 }
 
 #define MAX_SIZE 0xFFFFFFFF
-#define NONE 0
-#define PLUS 1
-#define MINUS 2
-#define SHIFTF 3
-#define SHIFTB 4
+enum op {
+	NONE,PLUS,MINUS,SHIFTF,SHIFTB
+};
 void add_to(char const* const prog,char const* const str,size_t* const progress) {
 	size_t strl;
 	memcpy(prog+*progress,str,strl=(strlen(str)));

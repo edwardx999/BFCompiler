@@ -1,10 +1,26 @@
 /*
+Copyright(C) 2018 Edward Xie
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+/*
 	define DATA_TYPE to a type to use as a generic
 */
 #include "nameconcat.h"
 #ifdef DATA_TYPE
 #include <stdlib.h>
-
+	
 #define STACK_NAME(T) NAME_CONCAT(stack_,T)
 typedef struct {
 #ifdef SAFE_STACK
@@ -38,7 +54,7 @@ void FREE_STACK(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack);
 _Bool IS_EMPTY(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack);
 
 
-STACK_NAME(DATA_TYPE) CREATE_STACK(DATA_TYPE)(size_t capacity) {
+STACK_NAME(DATA_TYPE) inline CREATE_STACK(DATA_TYPE)(size_t capacity) {
 	STACK_NAME(DATA_TYPE) toret={
 	#ifdef SAFE_STACK
 		.capacity=capacity,
@@ -54,7 +70,7 @@ int
 #else
 void
 #endif
-PUSH_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack,DATA_TYPE value) {
+inline PUSH_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack,DATA_TYPE value) {
 #ifdef SAFE_STACK
 	if(stack->top==capacity)
 		return 1;
@@ -65,15 +81,15 @@ PUSH_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack,DATA_TYPE value) {
 #endif //SAFE_STACK
 }
 
-DATA_TYPE GET_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
+DATA_TYPE inline GET_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
 	return stack->data[stack->back];
 }
 
-void POP_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
+void inline POP_TOP(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
 	--stack->back;
 }
 
-void FREE_STACK(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
+void inline FREE_STACK(DATA_TYPE)(STACK_NAME(DATA_TYPE)* stack) {
 	free(stack->data);
 }
 
